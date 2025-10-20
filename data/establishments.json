@@ -1,0 +1,8 @@
+{
+  "t": { "type": "tavern", "menu": ["Drink", "Eat", "Sing", "Buy a round", "Exit"] },
+  "s": { "type": "shop", "menu": ["Buy", "Sell", "Talk", "Exit"] },
+  "b": { "type": "bank", "menu": ["Deposit", "Withdraw", "Balance", "Exit"] },
+  "g": { "type": "guild", "menu": ["Train", "Join", "Quest", "Exit"] },
+  "h": { "type": "healer", "menu": ["Heal", "Buy Potion", "Talk", "Exit"] },
+  "d": { "type": "dungeon", "menu": ["Enter", "Leave"] }
+}
