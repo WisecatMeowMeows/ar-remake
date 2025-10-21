@@ -1,0 +1,136 @@
+diff --git a/player_data.py b/player_data.py
+new file mode 100644
+--- /dev/null
++++ b/player_data.py
+@@
++import json, os
++
++DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
++PLAYER_FILE = os.path.join(DATA_DIR, "player.json")
++
++DEFAULT_STATS = {
++    "health": 100,
++    "stamina": 100,
++    "charisma": 10,
++    "gold": 50
++}
++
++def ensure_data_dir():
++    if not os.path.exists(DATA_DIR):
++        os.makedirs(DATA_DIR)
++
++def load_player():
++    ensure_data_dir()
++    if os.path.exists(PLAYER_FILE):
++        try:
++            with open(PLAYER_FILE, "r") as f:
++                return json.load(f)
++        except Exception:
++            pass
++    return DEFAULT_STATS.copy()
++
++def save_player(stats):
++    ensure_data_dir()
++    with open(PLAYER_FILE, "w") as f:
++        json.dump(stats, f, indent=2)
++
++def modify_stat(stats, key, delta):
++    stats[key] = max(0, stats.get(key, 0) + delta)
++    return stats
+diff --git a/main_pygame.py b/main_pygame.py
+--- a/main_pygame.py
++++ b/main_pygame.py
+@@
++# Added persistent player HUD, toast messages, and basic tavern actions.
++import pygame, time
++from player_data import load_player, save_player, modify_stat
++
++pygame.init()
++
++WIDTH, HEIGHT = 1280, 720
++screen = pygame.display.set_mode((WIDTH, HEIGHT))
++pygame.display.set_caption("Alternate Reality v0.6")
++
++font = pygame.font.SysFont("arial", 20)
++
++DARK_BG = (0, 0, 0, 180)
++WHITE = (255, 255, 255)
++
++player_stats = load_player()
++
++toast_msg = None
++toast_alpha = 0
++toast_start = 0
++
++def show_toast(msg):
++    global toast_msg, toast_alpha, toast_start
++    toast_msg = msg
++    toast_alpha = 255
++    toast_start = time.time()
++
++def draw_hud(surface):
++    hud = pygame.Surface((250, 100), pygame.SRCALPHA)
++    hud.fill(DARK_BG)
++    y = 10
++    for line in [
++        f"Health: {player_stats['health']}",
++        f"Stamina: {player_stats['stamina']}",
++        f"Charisma: {player_stats['charisma']}",
++        f"Gold: {player_stats['gold']}",
++    ]:
++        txt = font.render(line, True, WHITE)
++        hud.blit(txt, (10, y))
++        y += 22
++    surface.blit(hud, (10, 10))
++
++def draw_toast(surface):
++    if not toast_msg:
++        return
++    elapsed = time.time() - toast_start
++    fade_time = 2
++    if elapsed > fade_time:
++        return
++    alpha = int(255 * (1 - elapsed / fade_time))
++    surf = pygame.Surface((WIDTH, 40), pygame.SRCALPHA)
++    surf.fill((0, 0, 0, 128))
++    txt = font.render(toast_msg, True, WHITE)
++    rect = txt.get_rect(center=(WIDTH//2, HEIGHT - 60))
++    surf.blit(txt, rect)
++    surf.set_alpha(alpha)
++    surface.blit(surf, (0, 0))
++
++running = True
++clock = pygame.time.Clock()
++
++while running:
++    for event in pygame.event.get():
++        if event.type == pygame.QUIT:
++            save_player(player_stats)
++            running = False
++        elif event.type == pygame.KEYDOWN:
++            if event.key == pygame.K_ESCAPE:
++                save_player(player_stats)
++                running = False
++            elif event.key == pygame.K_1:
++                player_stats = modify_stat(player_stats, "stamina", 5)
++                player_stats = modify_stat(player_stats, "gold", -1)
++                show_toast("You feel refreshed.")
++            elif event.key == pygame.K_2:
++                player_stats = modify_stat(player_stats, "health", 5)
++                player_stats = modify_stat(player_stats, "gold", -2)
++                show_toast("You eat a hearty meal.")
++            elif event.key == pygame.K_3:
++                player_stats = modify_stat(player_stats, "charisma", 1)
++                show_toast("You sing a cheerful tune.")
++            elif event.key == pygame.K_4:
++                player_stats = modify_stat(player_stats, "charisma", 2)
++                player_stats = modify_stat(player_stats, "gold", -5)
++                show_toast("Everyone cheers!")
++
++    screen.fill((40, 40, 40))
++    draw_hud(screen)
++    draw_toast(screen)
++    pygame.display.flip()
++    clock.tick(60)
++
++pygame.quit()
